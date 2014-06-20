@@ -6,7 +6,7 @@
 #  vim:ts=2:sw=2:et
 #
 $:.unshift File.join(File.dirname(__FILE__),'.','../lib')
-require 'rundeck-cli'
+require 'rundeck-api'
 require 'optionscrapper'
 require 'pp'
 
