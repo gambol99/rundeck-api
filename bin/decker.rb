@@ -7,7 +7,7 @@
 #
 $:.unshift File.join(File.dirname(__FILE__),'.','../lib')
 require 'rubygems' if RUBY_VERSION < '1.9.0'
-require 'rundeck-cli'
+require 'rundeck-api'
 require 'optionscrapper'
 require 'colorize'
 require 'pp'
