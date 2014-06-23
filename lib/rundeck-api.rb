@@ -4,18 +4,18 @@
 #
 #  vim:ts=2:sw=2:et
 #
-$:.unshift File.join(File.dirname(__FILE__),'rundeck-cli/' )
+$:.unshift File.join(File.dirname(__FILE__),'rundeck-api/' )
 require 'models'
 module Rundeck
   module API
     ROOT = File.expand_path File.dirname __FILE__
 
-    require "#{ROOT}/rundeck-cli/version"
+    require "#{ROOT}/rundeck-api/version"
 
-    autoload :Version,  "#{ROOT}/rundeck-cli/version"
-    autoload :Session,  "#{ROOT}/rundeck-cli/session"
-    autoload :Models,   "#{ROOT}/rundeck-cli/models"
-    autoload :Utils,    "#{ROOT}/rundeck-cli/utils"
+    autoload :Version,  "#{ROOT}/rundeck-api/version"
+    autoload :Session,  "#{ROOT}/rundeck-api/session"
+    autoload :Models,   "#{ROOT}/rundeck-api/models"
+    autoload :Utils,    "#{ROOT}/rundeck-api/utils"
 
     def self.version
       Rundeck::VERSION
