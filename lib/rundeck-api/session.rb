@@ -22,11 +22,11 @@ module Rundeck
         debug_output $stderr
       end
 
-      def get  uri, body = {}; request :get,  uri, body, true; end
-      def post uri, body = {}; request :post, uri, body, true; end
+      def get  uri, body = {}; request :get,  uri, body; end
+      def post uri, body = {}; request :post, uri, body; end
 
       private
-      def request method, uri, body, convert, timeout = 10
+      def request method, uri, body, timeout = 10
         result = nil
         url    = rundeck( uri )
         Timeout::timeout( timeout ) do 
@@ -40,7 +40,7 @@ module Rundeck
         end
         raise Exception, "unable to retrive the request: #{url}"                        unless result
         raise Exception, "invalid response to request: #{url}, error: #{result.body}"   unless result.code == 200
-        ::XmlSimple.xml_in( result.body ) if convert
+        ::XmlSimple.xml_in( result.body )
       end
 
       def validate_options options 

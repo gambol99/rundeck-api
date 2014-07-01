@@ -9,7 +9,7 @@ require 'output'
 module Rundeck
   module Models
     class Execution
-      attr_reader :success, :apiversion, :id, :href, :user, :project, :started 
+      attr_reader :success, :apiversion, :id, :href, :user, :project, :started, :status
 
       def initialize session, definition
         @session = session
@@ -24,8 +24,9 @@ module Rundeck
         execution['status'] =~ /running/
       end
 
-      def status
-        execution['status']
+      def kill 
+        raise ArgumentError, "the execution: #{id} is not running at the moment, cannot abort" unless running?
+        execution_abort
       end
 
       def waitfor interval = 0.5, timeout = 120, &block
@@ -36,16 +37,42 @@ module Rundeck
         yield self if block_given?
       end
 
-      def output
-        raise ArgumentError, "the job is still running, you have to wait until finished" if running?
-        output = Rundeck::Models::Output.format( @session.get( "/api/5/execution/#{@id}/output" ) )
+      def output 
+        raise ArgumentError, "the execution has not yet finished, please wait until the job has ended" unless finished?
+        Rundeck::Models::Output.format( execution_output_format( execution_output ) )
+      end
+
+      def tail interval = 0.5, &block
+        raise ArgumentError, "the execution has already finished, you can only tail a running task" unless running?
+        offset = 0
+        while running?
+          response       = execution_output offset
+          current_offset = Rundeck::Models::Output.offset( response )
+          if current_offset == offset
+            sleep interval
+          else 
+            offset = current_offset
+            yield Rundeck::Models::Output.format( response )
+          end
+        end
       end
 
       private
-      def execution 
+      def execution
         response = @session.get( "/api/1/execution/#{@id}" )
-        return response['executions'].first['execution'].first if response['success'] == 'true'
-        raise Exception, 'failed to get the status for this execution'
+        response['executions'].first['execution'].first
+      end
+
+      def execution_abort
+        @session.post( "api/1/execution/#{id}/abort" )
+      end
+
+      def execution_output offset = 0
+        @session.get( "/api/5/execution/#{@id}/output?offset=#{offset}" )
+      end
+
+      def execution_output_format response 
+        Rundeck::Models::Output.format( response ) 
       end
 
       def parse_definition definition
@@ -53,8 +80,9 @@ module Rundeck
         @apiversion = definition['apiversion']
         execution   = definition['executions'].first['execution'].first
         @id         = execution['id']
-        @ref        = execution['href']
+        @href       = execution['href']
         @user       = execution['user']
+        @status     = execution['status']
         @started    = execution['date-started'].first['unixtime']
       end
     end

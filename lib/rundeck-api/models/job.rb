@@ -9,39 +9,38 @@ require 'execution'
 module Rundeck
   module Models
     class Job
-
-      attr_reader :id, :uuid, :description, :name, :project, :options
+      attr_reader :id, :uuid, :description, :name, :project, :options, :group, :multipleExecutions
 
       def initialize session, definition
         @session = session
         parse_definitions definition
       end
 
-      def running?
-
-      end
-
-      def history
-
-      end
-
       def options 
         ( @options || {} )
       end
 
-      def run arguments = {}
-        job_arguments = ""
-        if !@options.empty?
-          arguments.each_pair do |k,v| 
-            job_arguments << "-#{k.to_s} #{v} "
-          end
+      def executions &block
+        @session.get( "/api/1/job/#{id}/executions" )['executions'].map do |x|
+          x = Rundeck::Models::Execution.new( @session, x )
+          yield x if block_given?
+          x 
         end
+      end
+
+      def run arguments = {}
         Rundeck::Models::Execution.new( @session, 
-          @session.post( "/api/1/job/#{@id}/run", { :argString => job_arguments } ) 
+          @session.post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } ) 
         )
       end
 
       private
+      def generate_job_options arguments = {}
+        job_arguments = ""
+        arguments.each_pair { |k,v| job_arguments << "-#{k.to_s} #{v} " } 
+        job_arguments
+      end
+
       def parse_definitions definition
         begin 
           %w(id uuid description name loglevel).each { |x| instance_variable_set("@#{x}", definition[x].first ) }

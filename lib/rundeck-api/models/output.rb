@@ -8,18 +8,23 @@ module Rundeck
   module Models
     class Output
       class << self
-
         def format response
           formated_output = ""
-          if response['output'].first.has_key? 'entries'
-            response['output'].first['entries'].first['entry'].each do |line|
-              formated_output << "%s (user:%s) (node:%s) - %s\n" % 
-                [ line['absolute_time'], line['user'], line['node'], line['content'] ]
+          if output( response ).has_key? 'entries' and !output( response )['entries'].first.empty?
+            output( response )['entries'].first['entry'].each do |line|
+              formated_output << "%s (%s) : %s\n" % [ line['absolute_time'], line['node'], (line['content']||'').chomp ]
             end
           end
           formated_output
         end
 
+        def offset response 
+          output( response )['offset'].first
+        end
+
+        def output response
+          response['output'].first if response['output'].first 
+        end
       end
     end
   end
