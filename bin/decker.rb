@@ -17,36 +17,69 @@ def verbose message
   puts "[#{now}] ".green << "#{message}".white if message
 end
 
-@options = {
-  :rundeck   => 'https://rundeck.domain.com',
-  :api_token => 'token',
-  :project   => 'orchestration',
-  :args      => {}
-}
-
-deck    = Rundeck::API.new @options
-project = deck.project @options[:project]
-Parser  = OptionScrapper::new do |o|
-  o.banner = "Usage: #{__FILE__} -p|--project PROJECT command [options]"
-  o.on( '-H URL',     '--rundeck URL',      'the full url of the rundeck instance' )      { |x| @options[:rundeck]   = x }
-  o.on( '-t TOKEN',   '--token TOKEN',      'the api token to use when calling rundeck' ) { |x| @options[:api_token] = x }
-  o.on( '-p PROJECT', '--project PROJECT',  'the name of the project within rundeck' )    { |x| @option[:project]    = x }
-  project.jobs do |job|    
-    o.command job.name.to_sym, job.description do 
+def generate_parsers project
+  
+  @parsers[:jobs] = {}
+  project.jobs do |job|  
+    @parsers[:jobs][job.name] = OptionParser::new do |o|  
+      o.banner = ''
+      o.separator "\tjob: #{job.name}     : #{job.description}"
+      o.separator ''
       job.options.each do |option|
         option_name = option['name']
         description = option['description'].first
         description << " ( defaults: #{option['value']} )" if option['value']
         o.on( "--#{option_name} #{option_name.upcase}", description ) { |x| @options[:args][option_name.to_sym] = x   }
       end
-      o.on_command { @options[:job] = job.name }
+      o.separator ''
+    end
+  end
+
+  @parsers[:main] = OptionScrapper::new do |o|
+    o.banner = "Usage: #{__FILE__} command [options]"
+    o.on( '-l', '--list', 'list all the jobs within the project ') do 
+      puts <<-EOF
+
+    Project: #{project.name} : a list of jobs under this project 
+    =====================================================
+    Usage: #{__FILE__} run -n|--name [name] -- [options][--help|-h]
+
+EOF
+      project.jobs { |job|
+        puts "%32s :    %s" % [ job.name, job.description ]
+      }
+      puts 
+      exit 0
+    end
+    o.command :run, 'run / execute a job within the project' do 
+      o.on( '-n NAME', '--name NAME', 'perform an execution of the job' ) do |job|
+        raise ArgumentError, "the job: #{job} does not exist, please check spelling" unless project.list_jobs.include? job
+        @options[:job] = job
+        @jobs_options  = ( ARGV.index('--') ) ? ARGV[ARGV.index('--')+1..-1] : ARGV[ARGV.index(job)+1..-1]
+        @parsers[:jobs][job].parse! @jobs_options
+      end
+      o.on( '-t', '--tail', 'tail the output of the execution and print to screen' ) { |x| @options[:tail] = true  }
     end
   end
 end
 
+@parsers  = {
+  :jobs  => nil,
+  :main  => nil
+}
+@options = {
+  :rundeck   => 'https://rundeck.domain.com',
+  :api_token => 'some_project_name',
+  :project   => 'orchestration',
+  :args      => {}
+}
 begin
+  deck    = Rundeck::API.new @options
+  project = deck.project @options[:project]
+  # step: generate the parsers
+  generate_parsers project
   # step: parse the command line options
-  Parser.parse!
+  @parsers[:main].parse!
   # step: we need to validate the job options are correct
   job   = project.job @options[:job]
   # step: extract the options
@@ -76,6 +109,10 @@ begin
   time_took = ( Time.now - start_time )
   verbose "step: time_took: %fms" % [ time_took ] 
   verbose "step: complete"
+rescue OptionParser::InvalidOption => e 
+  puts e.message
+rescue Interrupt => e 
+  verbose "exiting tho the job: #{@options[:job]} might still be running"
 rescue ArgumentError => e 
   puts "[error] #{e.message}".red
   exit 1

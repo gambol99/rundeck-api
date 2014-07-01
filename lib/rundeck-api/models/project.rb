@@ -18,9 +18,9 @@ module Rundeck
 
       def jobs &block
         @session.get( "/api/1/jobs/export?project=#{@name}" )['job'].map do |x|
-          job = Rundeck::Models::Job.new @session, x          
-          yield job if block_given?
-          job 
+          the_job = Rundeck::Models::Job.new @session, x          
+          yield the_job if block_given?
+          the_job 
         end
       end
 
@@ -32,6 +32,10 @@ module Rundeck
 
       def job? name 
         !job.nil?
+      end
+
+      def list_jobs 
+        jobs.map { |x| x.name }
       end
       
       private 

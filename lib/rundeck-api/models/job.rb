@@ -43,7 +43,10 @@ module Rundeck
 
       def parse_definitions definition
         begin 
-          %w(id uuid description name loglevel).each { |x| instance_variable_set("@#{x}", definition[x].first ) }
+          @id = definition['id'].first
+          @name = definition['name'].first
+          @uuid = definition['uuid'].first 
+          @description = ( definition['description'].first.empty? ) ? 'no description' : definition['description'].first
           @project = definition['context'].first['project']
           if definition['context'].first.has_key? 'options'
             @options = definition['context'].first['options'].first['option']
