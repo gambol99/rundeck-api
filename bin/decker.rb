@@ -67,18 +67,15 @@ begin
   verbose "step: executing job: #{@options[:job]}, project: #{@options[:projects]}"
   execution = job.run @options[:args]
   verbose "step: execution started, id: #{execution.id}, href: #{execution.href}"
-  verbose "step: waiting for the job execution to finish"
-  interval = 1
-  execution.waitfor interval do 
-    verbose "step: execution id: #{execution.id}, status: #{execution.status}, interval: #{interval}" 
+  verbose "step: tailing the execution output"
+  execution.tail do |output|
+    puts "%s" % [ output.chomp.light_blue ]
   end
   verbose "step: the job has finished, exit status: " << execution.status
   verbose "step: retrieve the execution output:"
-  puts execution.output.light_blue
   time_took = ( Time.now - start_time )
   verbose "step: time_took: %fms" % [ time_took ] 
   verbose "step: complete"
-
 rescue ArgumentError => e 
   puts "[error] #{e.message}".red
   exit 1
