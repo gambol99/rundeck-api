@@ -1,6 +1,8 @@
 Rundeck API
 ===========
 
+A simple api into rundeck - note, this was written quickly ... needs some polish so to speak :-)
+
     $:.unshift File.join(File.dirname(__FILE__),'.','../lib')
     require 'rundeck-cli'
     require 'optionscrapper'
