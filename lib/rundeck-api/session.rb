@@ -22,25 +22,29 @@ module Rundeck
         debug_output $stderr
       end
 
-      def get  uri, body = {}; request :get,  uri, body; end
-      def post uri, body = {}; request :post, uri, body; end
+      def get  uri, body = {}, parse = true
+        request :get, uri, { :body => body, :parse => parse } 
+      end
+      def post uri, body = {}, parse = true
+        request :post, uri, { :body => body, :parse => parse }
+      end
 
       private
-      def request method, uri, body, timeout = 10
+      def request method, uri, options = {}
         result = nil
         url    = rundeck( uri )
-        Timeout::timeout( timeout ) do 
+        Timeout::timeout( options[:timeout] || 10 ) do 
           result = self.class.send( "#{method}", url, 
             :headers => { 
               'X-Rundeck-Auth-Token' => @options[:api_token],
               'Accept'               => 'application/xml'
             },
-            :query  => body
+            :query  => options[:body]
           )
         end
         raise Exception, "unable to retrive the request: #{url}"                        unless result
         raise Exception, "invalid response to request: #{url}, error: #{result.body}"   unless result.code == 200
-        ::XmlSimple.xml_in( result.body )
+        ( options[:parse] ) ? ::XmlSimple.xml_in( result.body ) : result.body
       end
 
       def validate_options options 

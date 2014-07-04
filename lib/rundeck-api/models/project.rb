@@ -16,6 +16,11 @@ module Rundeck
         parse_definition definition
       end
 
+      def export format 
+        raise ArgumentError, "the format: #{format} is not support; either yaml or xml please" unless format =~ /^(yaml|xml)$/
+        @session.get( "/api/1/jobs/export?project=#{name}&format=#{format}", {}, false )
+      end
+
       def jobs &block
         @session.get( "/api/1/jobs/export?project=#{@name}" )['job'].map do |x|
           the_job = Rundeck::Models::Job.new @session, x          

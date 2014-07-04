@@ -59,6 +59,12 @@ EOF
       puts 
       exit 0
     end
+    o.command :export, 'export the jobs from the project in the specified format' do 
+      o.on( '-f FORMAT', '--format FORMAT',   'the format of the jobs, either yaml or xml (defaults to yaml)') do 
+        @options[:format] = x 
+      end
+      o.on_command { @options[:command] = :export }
+    end
     o.command :run, 'run / execute a job within the project' do 
       o.on( '-n NAME', '--name NAME', 'perform an execution of the job' ) do |job|
         raise ArgumentError, "the job: #{job} does not exist, please check spelling" unless project.list_jobs.include? job
@@ -67,6 +73,7 @@ EOF
         @parsers[:jobs][job].parse! @jobs_options
       end
       o.on( '-t', '--tail', 'tail the output of the execution and print to screen' ) { |x| @options[:tail] = true  }
+      o.on_command { @options[:command] = :run }
     end
   end
 end
@@ -81,15 +88,9 @@ end
   :project   => 'orchestration',
   :args      => {}
 }
-begin
-  deck    = Rundeck::API.new @options
-  project = deck.project @options[:project]
-  # step: generate the parsers
-  generate_parsers project
-  # step: parse the command line options
-  @parsers[:main].parse!
-  # step: we need to validate the job options are correct
-  job   = project.job @options[:job]
+
+def run project
+  job = project.job @options[:job]
   # step: extract the options
   verbose "step: validating the job options for job: #{job.name}"
   job.options.each do |option|
@@ -117,8 +118,23 @@ begin
   time_took = ( Time.now - start_time )
   verbose "step: time_took: %fms" % [ time_took ] 
   verbose "step: complete"
-rescue OptionParser::InvalidOption => e 
-  puts e.message
+end
+
+def export project
+  verbose "exporting all the jobs from project: #{@options[:project]}"
+  puts project.export @options[:format] || 'yaml'
+end
+
+begin
+  deck    = Rundeck::API.new @options
+  project = deck.project @options[:project]
+  # step: generate the parsers
+  generate_parsers project
+  # step: parse the command line options
+  @parsers[:main].parse!
+  # step: we need to validate the job options are correct
+  run project    if @options[:command] == :run 
+  export project if @options[:command] == :export 
 rescue Interrupt => e 
   verbose "exiting tho the job: #{@options[:job]} might still be running"
 rescue ArgumentError => e 
