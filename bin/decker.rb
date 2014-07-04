@@ -26,9 +26,17 @@ def generate_parsers project
       o.separator "\tjob: #{job.name}     : #{job.description}"
       o.separator ''
       job.options.each do |option|
-        option_name = option['name']
-        description = option['description'].first
-        description << " ( defaults: #{option['value']} )" if option['value']
+        option_name      = option['name']
+        description      = ( option['description'] || [] ).first || "no description for this option"
+        if description 
+
+        end
+        if option['values'] or option['value']
+          description << " ( "
+          description << "defaults: '#{option['value'].blue}' " if option['value']
+          description << "options: '#{option['values'].blue}' " if option['values']
+          description << ")"
+        end
         o.on( "--#{option_name} #{option_name.upcase}", description ) { |x| @options[:args][option_name.to_sym] = x   }
       end
       o.separator ''
