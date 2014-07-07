@@ -18,8 +18,8 @@ require 'pp'
 }
 @parsers = nil
 @options = {
-  :rundeck   => 'https://rundeck.hq.noths.com',
-  :api_token => 'KTggyDiZvlGRHTnY1U78dMYE9o1WC3m6',
+  :rundeck   => 'https://rundeck.domain.com',
+  :api_token => 'dsl;ds;ld;sld;sld;ls;dl;sl',
   :project   => 'orchestration',
   :args      => {}
 }
