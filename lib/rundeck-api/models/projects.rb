@@ -10,7 +10,7 @@ module Rundeck
   module Models
     class Projects
       def initialize session
-        @session  = session
+        @session = session
       end
 
       def projects 
