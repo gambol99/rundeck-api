@@ -21,6 +21,17 @@ module Rundeck
         @session.get( "/api/1/jobs/export?project=#{name}&format=#{format}", {}, false )
       end
 
+      def import job, options 
+        raise ArgumentError, "you have not specific any to import" unless job
+        required [ :format, :dupe, :remove ], options
+        @session.post( "/api/1/jobs/import", {
+          :project => @name,
+          :format  => options[:format],
+          :dupeOption => options[:dupe],
+          :uuidOption => options[:uuid],
+        } )
+      end
+
       def jobs &block
         @session.get( "/api/1/jobs/export?project=#{@name}" )['job'].map do |x|
           the_job = Rundeck::Models::Job.new @session, x          
