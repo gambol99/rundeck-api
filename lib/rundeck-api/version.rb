@@ -5,5 +5,7 @@
 #  vim:ts=2:sw=2:et
 #
 module Rundeck
-  VERSION = '0.0.1'
+  module Version
+    VERSION = '0.0.1'
+  end
 end

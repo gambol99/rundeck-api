@@ -18,7 +18,7 @@ module Rundeck
     autoload :Utils,    "#{ROOT}/rundeck-api/utils"
 
     def self.version
-      VERSION
+      Rundeck::VERSION
     end 
 
     def self.new options

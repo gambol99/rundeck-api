@@ -28,10 +28,6 @@ module Rundeck
         end
       end
 
-      def definition format = 'yaml'
-        @session.get "/api/1/job/#{@id}?format=#{format}", {}, false
-      end
-
       def run arguments = {}
         Rundeck::Models::Execution.new( @session, 
           @session.post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } ) 
