@@ -10,6 +10,7 @@ require 'rubygems' if RUBY_VERSION < '1.9.0'
 require 'rundeck-api'
 require 'optionscrapper'
 require 'colorize'
+require 'yaml'
 require 'pp'
 
 @parsers  = {
@@ -18,9 +19,6 @@ require 'pp'
 }
 @parsers = nil
 @options = {
-  :rundeck   => 'https://rundeck.domain.com',
-  :api_token => 'dsl;ds;ld;sld;sld;ls;dl;sl',
-  :project   => 'orchestration',
   :args      => {}
 }
 
@@ -59,6 +57,14 @@ def jobs
     end
   end
   @jobs
+end
+
+def rundeck filename = '.rundeck.yaml'
+  path    = File.join(File.dirname(__FILE__), filename )
+  raise "the config file: #{path} does not exist"  unless File.exist? path
+  raise "the config file: #{path} is not a file"   unless File.file? path
+  raise "the config file: #{path} is not readable" unless File.readable? path
+  options = YAML.load(File.read(path))
 end
 
 def project
@@ -107,7 +113,6 @@ EOF
         raise ArgumentError, "the job: #{job} does not exist, please check spelling" unless project.list_jobs.include? job
         options[:job] = job
         jobs_options  = ( ARGV.index('--') ) ? ARGV[ARGV.index('--')+1..-1] : ARGV[ARGV.index(job)+1..-1]
-        puts "HELLO"
         jobs[job].parse! jobs_options
       end
       o.on( '-t', '--tail', 'tail the output of the execution and print to screen' ) { |x| options[:tail] = true  }
@@ -184,8 +189,9 @@ def export project = options[:deck]
 end
 
 begin
-  deck = Rundeck::API.new options
+  deck = Rundeck::API.new rundeck
   options[:deck] = deck.project options[:project]
+  options[:args] = {}
   # step: parse the command line options
   parser.parse!
   # step: we need to validate the job options are correct

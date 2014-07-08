@@ -36,7 +36,7 @@ module Rundeck
         Timeout::timeout( options[:timeout] || 10 ) do 
           result = self.class.send( "#{method}", url, 
             :headers => { 
-              'X-Rundeck-Auth-Token' => @options[:api_token],
+              'X-Rundeck-Auth-Token' => @options['api_token'],
               'Accept'               => 'application/xml'
             },
             :query  => options[:body]
@@ -48,16 +48,16 @@ module Rundeck
       end
 
       def validate_options options 
-        required [ :rundeck, :api_token ], options
+        required %w(rundeck api_token), options
         # step: check it's a valid url
-        raise "the rundeck: #{options[:rundeck]} is an invalid url" unless valid_url? options[:rundeck]
+        raise "the rundeck: #{options['rundeck']} is an invalid url" unless valid_url? options['rundeck']
         # step: set the base uri
-        self.class.base_uri options[:rundeck]
+        self.class.base_uri options['rundeck']
         options
       end
 
       def rundeck uri
-        '%s/%s' % [ @options[:rundeck], uri.gsub( /^\//,'') ]
+        '%s/%s' % [ @options['rundeck'], uri.gsub( /^\//,'') ]
       end
     end
   end
