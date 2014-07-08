@@ -18,21 +18,19 @@ require 'pp'
   :main  => nil
 }
 @parsers = nil
-@options = {
-  :args      => {}
-}
+@jobs    = {}
 
 def verbose message 
   now = Time.now.strftime('%H:%M:%S')
   puts "[#{now}] ".green << "#{message}".white if message
 end
 
-def options 
-  @options ||= {}
+def options data = {}
+  @options ||= data
 end
 
 def jobs
-  return @jobs if @jobs
+  return @jobs if !@jobs.empty?
   # step: we create a parse for EACH job
   project.jobs do |job|  
     @jobs[job.name] = OptionParser::new do |o|  
@@ -64,7 +62,7 @@ def rundeck filename = '.rundeck.yaml'
   raise "the config file: #{path} does not exist"  unless File.exist? path
   raise "the config file: #{path} is not a file"   unless File.file? path
   raise "the config file: #{path} is not readable" unless File.readable? path
-  options = YAML.load(File.read(path))
+  options YAML.load(File.read(path))
 end
 
 def project
@@ -190,7 +188,7 @@ end
 
 begin
   deck = Rundeck::API.new rundeck
-  options[:deck] = deck.project options[:project]
+  options[:deck] = deck.project options['project']
   options[:args] = {}
   # step: parse the command line options
   parser.parse!
