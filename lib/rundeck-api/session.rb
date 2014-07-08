@@ -14,12 +14,10 @@ module Rundeck
       include HTTParty
       include Rundeck::Utils
 
+      #debug_output $stderr
+
       def initialize options
         @options = validate_options options
-      end
-
-      def debug
-        debug_output $stderr
       end
 
       def get  uri, body = {}, parse = true

@@ -88,7 +88,7 @@ EOF
       exit 0
     end
     o.command :import, 'import a jobs or jobs into the current project' do 
-      o.on( '-j JOBS', '--jobs JOBS',      'the location of the file contains the job/jobs' )             { |x| options[:jobs]     = x }
+      o.on( '-j JOBS', '--jobs JOBS',      'the location of the file contains the job/jobs' )             { |x| options[:filename] = x }
       o.on( '-f FORMAT','--format FORMAT', 'the format the jobs file is in (yaml/xml)' )                  { |x| options[:format]   = x }
       o.on( '-u OPTION', '--uuid OPTIONS', 'preserve or remove options for uuids' )                       { |x| options[:uuid]     = x }
       o.on( '-r', '--remove', 'remove the uuid from jobs, allows updateto succeed  (default is true)' )   { |x| options[:remove]   = x }
@@ -129,16 +129,18 @@ end
 # remove: Remove the UUIDs from imported jobs. Allows update/create to succeed without conflict on UUID.
 #
 def import 
-  # step: set the defaults
   options[:format] ||= 'yaml'
   options[:remove] ||= false
   options[:dupe]   ||= 'update'
+  options[:uuid]   ||= 'remove'
   parser.usage "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
   parser.usage "the dupe policy must be either skip/create/update" unless options[:dupe] =~ /^(skip|create|update)$/
   parser.usage "the uuid options must be eithe preserve or remove" unless options[:uuid] =~ /^(preserve|remove)$/
-  parser.usage "the job file: #{options[:jobs]} does not exist"    unless File.exist? options[:jobs]
-  parser.usage "the job file: #{options[:jobs]} is not a file"     unless File.file? options[:jobs]
-  project.import options[:jobs], options
+  parser.usage "the job file: #{options[:filename]} does not exist"    unless File.exist? options[:filename]
+  parser.usage "the job file: #{options[:filename]} is not a file"     unless File.file? options[:filename]
+  verbose "step: attemping to import the job definitions from file: #{options[:filename]}"
+  project.import File.read(options[:filename]), options
+  verbose "step: successfully imported the definitions"
 end
 
 def job
@@ -147,7 +149,7 @@ def job
   parser.usage "the job: #{options[:job]} does not exists" unless project.list_jobs.include? options[:job]
   parser.usage "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
   job = project.job options[:job]
-  puts job.definition
+  puts job.definition options[:format]
 end
 
 def run 

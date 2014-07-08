@@ -5,10 +5,12 @@
 #  vim:ts=2:sw=2:et
 #
 require 'job'
+require 'utils'
 
 module Rundeck
   module Models
     class Project
+      include Rundeck::Utils
       attr_reader :name, :description
 
       def initialize session, definition
@@ -29,6 +31,7 @@ module Rundeck
           :format  => options[:format],
           :dupeOption => options[:dupe],
           :uuidOption => options[:uuid],
+          :xmlBatch => job
         } )
       end
 
