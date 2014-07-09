@@ -8,11 +8,10 @@ require 'output'
 
 module Rundeck
   module Models
-    class Execution
+    class Execution < Base
       attr_reader :success, :apiversion, :id, :href, :user, :project, :started, :status
 
-      def initialize session, definition
-        @session = session
+      def initialize definition
         parse_definition definition
       end
 
@@ -59,16 +58,16 @@ module Rundeck
 
       private
       def execution
-        response = @session.get( "/api/1/execution/#{@id}" )
+        response = get( "/api/1/execution/#{@id}" )
         response['executions'].first['execution'].first
       end
 
       def execution_abort
-        @session.post( "api/1/execution/#{id}/abort" )
+        post( "api/1/execution/#{id}/abort" )
       end
 
       def execution_output offset = 0
-        @session.get( "/api/5/execution/#{@id}/output?offset=#{offset}" )
+        get( "/api/5/execution/#{@id}/output?offset=#{offset}" )
       end
 
       def execution_output_format response 

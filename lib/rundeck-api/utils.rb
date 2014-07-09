@@ -8,14 +8,18 @@ require 'uri'
 
 module Rundeck
   module Utils
-    def required args, options
-      args.each do |x|
-        raise ArgumentError, "you have not specified the #{x} option" unless options.has_key? x 
+    class << self 
+      def required args, options
+        puts "options: #{options}"
+        puts "args: #{args}"
+        args.each do |x|
+          raise ArgumentError, "you have not specified the #{x} option" unless options.has_key? x 
+        end
       end
-    end
 
-    def valid_url? url 
-      url =~ URI::regexp   
+      def valid_url? url 
+        url =~ URI::regexp   
+      end
     end
   end
 end

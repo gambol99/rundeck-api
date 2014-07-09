@@ -7,56 +7,44 @@
 require 'httparty'
 require 'xmlsimple'
 require 'utils'
+require 'config'
 
 module Rundeck
-  module API
-    class Session
-      include HTTParty
-      include Rundeck::Utils
-
-      #debug_output $stderr
-
-      def initialize options
-        @options = validate_options options
+  module Session
+    include HTTParty
+    [ :get, :post, :delete ].each do |m|
+      define_method "#{m}" do |uri,content = {},parse = true|
+        request( m, {
+          :uri   => uri,
+          :body  => content,
+          :parse => parse
+        } )  
       end
+    end
 
-      def get  uri, body = {}, parse = true
-        request :get, uri, { :body => body, :parse => parse } 
+    private
+    def request method, options = {}
+      result = nil
+      Timeout::timeout( CONFIG[:timeout] || 10 ) do 
+        result = HTTParty.send( "#{method}", rundeck( options[:uri] ), 
+          :headers => { 
+            'X-Rundeck-Auth-Token' => CONFIG['api_token'],
+            'Accept'               => CONFIG[:accepts]
+          },
+          :query  => options[:body]
+        )
       end
-      def post uri, body = {}, parse = true
-        request :post, uri, { :body => body, :parse => parse }
-      end
+      raise Exception, "unable to retrive the request: #{url}"                        unless result
+      raise Exception, "invalid response to request: #{url}, error: #{result.body}"   unless result.code == 200
+      ( options[:parse] ) ? parse_xml( result.body ) : result.body
+    end
 
-      private
-      def request method, uri, options = {}
-        result = nil
-        url    = rundeck( uri )
-        Timeout::timeout( options[:timeout] || 10 ) do 
-          result = self.class.send( "#{method}", url, 
-            :headers => { 
-              'X-Rundeck-Auth-Token' => @options['api_token'],
-              'Accept'               => 'application/xml'
-            },
-            :query  => options[:body]
-          )
-        end
-        raise Exception, "unable to retrive the request: #{url}"                        unless result
-        raise Exception, "invalid response to request: #{url}, error: #{result.body}"   unless result.code == 200
-        ( options[:parse] ) ? ::XmlSimple.xml_in( result.body ) : result.body
-      end
+    def parse_xml document
+      XmlSimple.xml_in( document )
+    end
 
-      def validate_options options 
-        required %w(rundeck api_token), options
-        # step: check it's a valid url
-        raise "the rundeck: #{options['rundeck']} is an invalid url" unless valid_url? options['rundeck']
-        # step: set the base uri
-        self.class.base_uri options['rundeck']
-        options
-      end
-
-      def rundeck uri
-        '%s/%s' % [ @options['rundeck'], uri.gsub( /^\//,'') ]
-      end
+    def rundeck uri
+      '%s/%s' % [ CONFIG['rundeck'], uri.gsub( /^\//,'') ]
     end
   end
 end

@@ -8,11 +8,10 @@ require 'execution'
 
 module Rundeck
   module Models
-    class Job
+    class Job < Base
       attr_reader :id, :uuid, :description, :name, :project, :options, :group, :multipleExecutions
 
-      def initialize session, definition
-        @session = session
+      def initialize definition
         parse_definitions definition
       end
 
@@ -21,20 +20,20 @@ module Rundeck
       end
 
       def executions &block
-        @session.get( "/api/1/job/#{id}/executions" )['executions'].map do |x|
-          x = Rundeck::Models::Execution.new( @session, x )
+        get( "/api/1/job/#{id}/executions" )['executions'].map do |x|
+          x = Rundeck::Models::Execution.new x 
           yield x if block_given?
-          x 
         end
       end
 
       def definition format = 'yaml'
-        @session.get "/api/1/job/#{@id}?format=#{format}", {}, false
+        check_format format
+        get "/api/1/job/#{@id}?format=#{format}", {}, false
       end
 
       def run arguments = {}
-        Rundeck::Models::Execution.new( @session, 
-          @session.post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } ) 
+        Rundeck::Models::Execution.new( 
+          post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } ) 
         )
       end
 

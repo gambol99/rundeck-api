@@ -5,4 +5,5 @@
 #  vim:ts=2:sw=2:et
 #
 $:.unshift File.join(File.dirname(__FILE__),'.','./models')
+require 'base'
 require 'projects'

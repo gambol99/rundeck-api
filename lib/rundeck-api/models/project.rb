@@ -9,24 +9,42 @@ require 'utils'
 
 module Rundeck
   module Models
-    class Project
-      include Rundeck::Utils
+    class Project < Base 
       attr_reader :name, :description
 
-      def initialize session, definition
-        @session = session
+      def initialize definition
         parse_definition definition
       end
-
-      def export format 
-        raise ArgumentError, "the format: #{format} is not support; either yaml or xml please" unless format =~ /^(yaml|xml)$/
-        @session.get( "/api/1/jobs/export?project=#{name}&format=#{format}", {}, false )
+      
+      def jobs &block
+        get( "/api/1/jobs/export?project=#{@name}" )['job'].map do |x|
+          data = Rundeck::Models::Job.new x          
+          yield data if block_given?
+        end
       end
 
-      def import job, options 
-        raise ArgumentError, "you have not specific any to import" unless job
+      def job name 
+        raise "the job: #{name} does not exist in this project" unless job? name 
+        x = jobs.select { |x| x.name == name }.first 
+      end
+
+      def job? name 
+        list.include? name 
+      end
+
+      def list
+        jobs.map { |x| x.name }
+      end
+
+      def export format = 'yaml'
+        check_format format
+        get( "/api/1/jobs/export?project=#{name}&format=#{format}", {}, false )
+      end
+
+      def import job, options = {}
         required [ :format, :dupe, :remove ], options
-        @session.post( "/api/1/jobs/import", {
+        check_format options[:format]
+        post( "/api/1/jobs/import", {
           :project => @name,
           :format  => options[:format],
           :dupeOption => options[:dupe],
@@ -35,28 +53,6 @@ module Rundeck
         } )
       end
 
-      def jobs &block
-        @session.get( "/api/1/jobs/export?project=#{@name}" )['job'].map do |x|
-          the_job = Rundeck::Models::Job.new @session, x          
-          yield the_job if block_given?
-          the_job 
-        end
-      end
-
-      def job name 
-        the_job = jobs.select { |x| x.name == name }.first
-        raise ArgumentError, "the job: #{name} does not exist in this project" unless the_job
-        the_job
-      end
-
-      def job? name 
-        !job.nil?
-      end
-
-      def list_jobs 
-        jobs.map { |x| x.name }
-      end
-      
       private 
       def parse_definition definition
         @name = definition['name'].first

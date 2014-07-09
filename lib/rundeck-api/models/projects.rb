@@ -5,17 +5,12 @@
 #  vim:ts=2:sw=2:et
 #
 require 'project'
-
 module Rundeck
   module Models
-    class Projects
-      def initialize session
-        @session = session
-      end
-
+    class Projects < Base
       def projects 
-        @session.get( '/api/1/projects' )['projects'].first['project'].map do |data|
-          Rundeck::Models::Project.new @session, data
+        get( '/api/1/projects' )['projects'].first['project'].map do |data|
+          Rundeck::Models::Project.new data
         end
       end
 
@@ -27,7 +22,7 @@ module Rundeck
         projects.select { |x| x.name == name }.first
       end
 
-      def list_projects
+      def list
         projects.map { |p| p.name }
       end
     end
