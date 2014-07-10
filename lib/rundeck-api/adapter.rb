@@ -33,7 +33,7 @@ module Rundeck
           :query  => options[:body]
         )
       end
-      raise Exception, "unable to retrive the request: #{url}"                        unless result
+      raise Exception, "unable to retrive the request: #{url}" unless result
       unless result.code == 200
         raise Exception, parse_xml(result.body)["error"].last["message"].first
       end
