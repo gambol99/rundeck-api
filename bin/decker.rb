@@ -108,7 +108,7 @@ EOF
     end
     o.command :run, 'run / execute a job within the project' do 
       o.on( '-n NAME', '--name NAME', 'perform an execution of the job' ) do |job|
-        raise ArgumentError, "the job: #{job} does not exist, please check spelling" unless project.list_jobs.include? job
+        raise ArgumentError, "the job: #{job} does not exist, please check spelling" unless project.list.include? job
         options[:job] = job
         jobs_options  = ( ARGV.index('--') ) ? ARGV[ARGV.index('--')+1..-1] : ARGV[ARGV.index(job)+1..-1]
         jobs[job].parse! jobs_options
@@ -146,7 +146,7 @@ end
 def job
   options[:format] ||= 'yaml'
   parser.usage "you have not specified a job to export the definition"  unless options[:job]
-  parser.usage "the job: #{options[:job]} does not exists" unless project.list_jobs.include? options[:job]
+  parser.usage "the job: #{options[:job]} does not exists" unless project.list.include? options[:job]
   parser.usage "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
   job = project.job options[:job]
   puts job.definition options[:format]

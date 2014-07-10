@@ -5,26 +5,24 @@
 #  vim:ts=2:sw=2:et
 #
 module Rundeck
-  module Models
-    class Output
-      class << self
-        def format response
-          formated_output = ""
-          if output( response ).has_key? 'entries' and !output( response )['entries'].first.empty?
-            output( response )['entries'].first['entry'].each do |line|
-              formated_output << "%s (%s) : %s\n" % [ line['absolute_time'], line['node'], (line['content']||'').chomp ]
-            end
+  class Output
+    class << self
+      def format response
+        formated_output = ""
+        if output( response ).has_key? 'entries' and !output( response )['entries'].first.empty?
+          output( response )['entries'].first['entry'].each do |line|
+            formated_output << "%s (%s) : %s\n" % [ line['absolute_time'], line['node'], (line['content']||'').chomp ]
           end
-          formated_output
         end
+        formated_output
+      end
 
-        def offset response 
-          output( response )['offset'].first
-        end
+      def offset response 
+        output( response )['offset'].first
+      end
 
-        def output response
-          response['output'].first if response['output'].first 
-        end
+      def output response
+        response['output'].first if response['output'].first 
       end
     end
   end

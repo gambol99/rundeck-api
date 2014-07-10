@@ -8,18 +8,31 @@ require 'uri'
 
 module Rundeck
   module Utils
-    class << self 
-      def required args, options
-        puts "options: #{options}"
-        puts "args: #{args}"
-        args.each do |x|
-          raise ArgumentError, "you have not specified the #{x} option" unless options.has_key? x 
-        end
+    def required args, options
+      args.each do |x|
+        raise ArgumentError, "you have not specified the #{x} option" unless options.has_key? x 
       end
+    end
 
-      def valid_url? url 
-        url =~ URI::regexp   
-      end
+    def valid_url? url 
+      url =~ URI::regexp   
+    end
+
+    def check_format format
+      raise "the format: #{format} is invalid, only #{formats.join(', ')} are supported" unless format? format
+      format
+    end
+
+    def formats 
+      %(yaml xml)
+    end
+
+    def version?
+      settings[:verbose]
+    end
+
+    def format? format
+      formats.include? format
     end
   end
 end

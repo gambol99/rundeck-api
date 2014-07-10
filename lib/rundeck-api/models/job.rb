@@ -7,58 +7,56 @@
 require 'execution'
 
 module Rundeck
-  module Models
-    class Job < Base
-      attr_reader :id, :uuid, :description, :name, :project, :options, :group, :multipleExecutions
+  class Job < Base
+    attr_reader :id, :uuid, :description, :name, :project, :options, :group, :multipleExecutions
 
-      def initialize definition
-        parse_definitions definition
+    def initialize definition
+      parse_definitions definition
+    end
+
+    def options 
+      ( @options || {} )
+    end
+
+    def executions &block
+      get( "/api/1/job/#{id}/executions" )['executions'].map do |x|
+        x = Rundeck::Execution.new x 
+        yield x if block_given?
       end
+    end
 
-      def options 
-        ( @options || {} )
-      end
+    def definition format = 'yaml'
+      check_format format
+      get "/api/1/job/#{@id}?format=#{format}", {}, false
+    end
 
-      def executions &block
-        get( "/api/1/job/#{id}/executions" )['executions'].map do |x|
-          x = Rundeck::Models::Execution.new x 
-          yield x if block_given?
+    def run arguments = {}
+      Rundeck::Execution.new( 
+        post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } ) 
+      )
+    end
+
+    private
+    def generate_job_options arguments = {}
+      job_arguments = ""
+      arguments.each_pair { |k,v| job_arguments << "-#{k.to_s} #{v} " } 
+      job_arguments
+    end
+
+    def parse_definitions definition
+      begin 
+        @id = definition['id'].first
+        @name = definition['name'].first
+        @uuid = definition['uuid'].first 
+        @description = ( definition['description'].first.empty? ) ? 'no description' : definition['description'].first
+        @project = definition['context'].first['project']
+        if definition['context'].first.has_key? 'options'
+          @options = definition['context'].first['options'].first['option']
+        else
+          @options = {}
         end
-      end
-
-      def definition format = 'yaml'
-        check_format format
-        get "/api/1/job/#{@id}?format=#{format}", {}, false
-      end
-
-      def run arguments = {}
-        Rundeck::Models::Execution.new( 
-          post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } ) 
-        )
-      end
-
-      private
-      def generate_job_options arguments = {}
-        job_arguments = ""
-        arguments.each_pair { |k,v| job_arguments << "-#{k.to_s} #{v} " } 
-        job_arguments
-      end
-
-      def parse_definitions definition
-        begin 
-          @id = definition['id'].first
-          @name = definition['name'].first
-          @uuid = definition['uuid'].first 
-          @description = ( definition['description'].first.empty? ) ? 'no description' : definition['description'].first
-          @project = definition['context'].first['project']
-          if definition['context'].first.has_key? 'options'
-            @options = definition['context'].first['options'].first['option']
-          else
-            @options = {}
-          end
-        rescue Exception => e 
-          raise Exception, "unable to parse the job definition: #{e.message}"
-        end
+      rescue Exception => e 
+        raise Exception, "unable to parse the job definition: #{e.message}"
       end
     end
   end

@@ -5,12 +5,11 @@
 #  vim:ts=2:sw=2:et
 #
 $:.unshift File.join(File.dirname(__FILE__),'rundeck-api/' )
+require 'base'
 require 'models'
-require 'config'
 
 module Rundeck
-  class API
-    include Rundeck::Config
+  module API
     ROOT = File.expand_path File.dirname __FILE__
     require "#{ROOT}/rundeck-api/version"
 
@@ -19,8 +18,8 @@ module Rundeck
     end 
 
     def self.new options 
-      Config.config options
-      Rundeck::Models::Projects.new 
+      base = Rundeck::Base.new
+      base.set_configuration options
     end
   end
 end
