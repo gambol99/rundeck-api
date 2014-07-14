@@ -26,6 +26,7 @@ module Rundeck
       url    = rundeck options[:uri]
       Timeout::timeout( settings[:timeout] || 10 ) do 
         result = HTTParty.send( "#{method}", url, 
+          :verify  => false,
           :headers => { 
             'X-Rundeck-Auth-Token' => settings[:api_token],
             'Accept'               => settings[:accepts]
