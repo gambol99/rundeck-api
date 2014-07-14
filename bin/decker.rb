@@ -57,7 +57,7 @@ def jobs
   @jobs
 end
 
-def rundeck filename = '.rundeck.yaml'
+def rundeck filename = "#{ENV['HOME']/.rundeck.yaml}"
   path    = File.join(File.dirname(__FILE__), filename )
   raise "the config file: #{path} does not exist"  unless File.exist? path
   raise "the config file: #{path} is not a file"   unless File.file? path
