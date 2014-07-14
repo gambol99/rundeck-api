@@ -57,7 +57,7 @@ def jobs
   @jobs
 end
 
-def rundeck filename = "#{ENV['HOME']/.rundeck.yaml}"
+def rundeck filename = "#{ENV['HOME']}/.rundeck.yaml"
   raise "the config file: #{filename} does not exist"  unless File.exist? filename
   raise "the config file: #{filename} is not a file"   unless File.file? filename
   raise "the config file: #{filename} is not readable" unless File.readable? filename
