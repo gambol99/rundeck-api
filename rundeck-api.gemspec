@@ -10,7 +10,7 @@ require 'version'
 
 Gem::Specification.new do |s|
   s.name        = "rundeck-api"
-  s.version     = Rundeck::Version::VERSION
+  s.version     = Rundeck::VERSION
   s.platform    = Gem::Platform::RUBY
   s.date        = '2014-06-23'
   s.authors     = ["Rohith Jayawardene"]
