@@ -23,5 +23,5 @@ Gem::Specification.new do |s|
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.add_dependency 'httparty'
-  s.add_dependency 'xmlsimple'
+  s.add_dependency 'xml-simple'
 end
