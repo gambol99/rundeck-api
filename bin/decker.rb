@@ -58,11 +58,10 @@ def jobs
 end
 
 def rundeck filename = "#{ENV['HOME']/.rundeck.yaml}"
-  path    = File.join(File.dirname(__FILE__), filename )
-  raise "the config file: #{path} does not exist"  unless File.exist? path
-  raise "the config file: #{path} is not a file"   unless File.file? path
-  raise "the config file: #{path} is not readable" unless File.readable? path
-  options YAML.load(File.read(path))
+  raise "the config file: #{filename} does not exist"  unless File.exist? filename
+  raise "the config file: #{filename} is not a file"   unless File.file? filename
+  raise "the config file: #{filename} is not readable" unless File.readable? filename
+  options YAML.load(File.read(filename))
 end
 
 def project
