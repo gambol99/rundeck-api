@@ -16,7 +16,7 @@ module Rundeck
           :uri   => uri,
           :body  => content,
           :parse => parse
-        } )  
+        } )
       end
     end
 
@@ -24,19 +24,25 @@ module Rundeck
     def request method, options = {}
       result = nil
       url    = rundeck options[:uri]
-      Timeout::timeout( settings[:timeout] || 10 ) do 
-        result = HTTParty.send( "#{method}", url, 
+      Timeout::timeout( settings[:timeout] || 10 ) do
+        http_options = {
           :verify  => false,
-          :headers => { 
+          :headers => {
             'X-Rundeck-Auth-Token' => settings[:api_token],
             'Accept'               => settings[:accepts]
-          },
-          :query  => options[:body]
-        )
+          }
+        }
+        case method
+          when :post
+            http_options[:body]  = options[:body]
+          else
+            http_options[:query] = options[:body]
+        end
+        result = HTTParty.send( "#{method}", url, http_options )
       end
       raise Exception, "unable to retrive the request: #{url}" unless result
       unless result.code == 200
-        raise Exception, parse_xml(result.body)["error"].last["message"].first
+        raise Exception, parse_xml(result.body)["error"].last["message"].first rescue result.body
       end
       ( options[:parse] ) ? parse_xml( result.body ) : result.body
     end

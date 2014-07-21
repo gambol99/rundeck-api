@@ -24,4 +24,5 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.add_dependency 'httparty'
   s.add_dependency 'xml-simple'
+  s.add_dependency 'optionscrapper'
 end
