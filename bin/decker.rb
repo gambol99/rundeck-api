@@ -100,7 +100,7 @@ EOF
       o.on_command { options[:command] = :job }
     end
     o.command :export, 'export the jobs from the project in the specified format' do 
-      o.on( '-f FORMAT', '--format FORMAT',   'the format of the jobs, either yaml or xml (defaults to yaml)') do 
+      o.on( '-f FORMAT', '--format FORMAT',   'the format of the jobs, either yaml or xml (defaults to yaml)') do |x|
         options[:format] = x 
       end
       o.on_command { options[:command] = :export }
