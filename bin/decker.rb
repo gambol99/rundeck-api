@@ -5,20 +5,22 @@
 #
 #  vim:ts=2:sw=2:et
 #
+
+$: << '/home/jest/scm/github/optionscrapper/lib'
 $:.unshift File.join(File.dirname(__FILE__),'.','../lib')
 require 'rubygems' if RUBY_VERSION < '1.9.0'
 require 'rundeck-api'
-require 'optionscrapper'
 require 'colorize'
 
 module Rundeck
   class Decker < CLI
     def initialize
       begin
-        # step: generate and par
+        # step: generate and parse the command line
         parser.parse!
-
-
+        # step: load the configuration
+        settings options[:config]
+        # step: pull the jobs from the project
       rescue SystemExit => e
         exit e.status
       rescue Exception => e
@@ -27,7 +29,7 @@ module Rundeck
     end
 
     private
-    def jobs
+    def list
       return @jobs if !@jobs.empty?
       # step: we create a parse for EACH job
       project.jobs do |job|
@@ -87,8 +89,8 @@ module Rundeck
       puts job.definition options[:format]
     end
 
-    def run
-      job     = project.job options[:job]
+    def exec
+      job = project.job options[:job]
       # step: extract the options
       verbose "step: validating the job options for job: #{job.name}"
       job.options.each do |option|
@@ -129,20 +131,20 @@ module Rundeck
         o.banner = "Usage: #{__FILE__} command [options]"
         o.on( '-c CONFIG', '--config CONFIG', 'the path / location of the configuration file ') { |x| options[:config] = x }
         o.on( '-r RUNDECK', '-rundeck RUNDECK', 'the configuration can contain multiple rundecks, selected via here' ) { |x| options[:rundeck] = x }
-        o.on( '-p PROJECT', '--project PROJECT', 'the project you are working within' ) { |x| options[:project] = x }
         o.command :projects, 'list all the projects within rundeck' do
           o.on_command { options[:command] = :projects }
         end
         o.command :list, 'list all the jobs with the selected project' do
           o.on_command { options[:command] = :list }
         end
-        o.command :run, 'run / execute a job within the project' do
+        o.command :exec, 'run / execute a job within the project' do
           o.on( '-n NAME', '--name NAME', 'perform an execution of the job' ) do |job|
             options[:job] = job
             options[:job_options] = ( ARGV.index('--') ) ? ARGV[ARGV.index('--')+1..-1] : ARGV[ARGV.index(job)+1..-1]
           end
           o.on( '-t', '--tail', 'tail the output of the execution and print to screen' ) { |x| options[:tail] = true  }
-          o.on_command { options[:command] = :run }
+          o.on( '-h', '--help', 'display the options for this job' ) { options[:usage] = true }
+          o.on_command {  options[:command] = :run }
         end
         o.command :import, 'import a jobs or jobs into the current project' do
           o.on( '-j JOBS', '--jobs JOBS',      'the location of the file contains the job/jobs' ) { |x| options[:filename] = x }
@@ -153,13 +155,9 @@ module Rundeck
           o.on_command { options[:command] = :import }
         end
         o.command :export, 'export the jobs from the project in the specified format' do
-          o.on( '-f FORMAT', '--format FORMAT',   'the format of the jobs, either yaml or xml (defaults to yaml)') { |x| options[:format] = x }
-          o.on_command { options[:command] = :export }
-        end
-        o.command :job, 'export a job definition from rundeck' do
-          o.on( '-f FORMAT','--format FORMAT', 'the format the jobs file is in (yaml/xml)' ) { |x| options[:format] = x }
+          o.on( '-f FORMAT', '--format FORMAT', 'the format of the jobs, either yaml or xml (defaults to yaml)') { |x| options[:format] = x }
           o.on( '-n NAME', '--name NAME', 'the name of the job you wish to export' ) { |x| options[:job] = x }
-          o.on_command { options[:command] = :job }
+          o.on_command { options[:command] = :export }
         end
       end
       @parser
@@ -168,24 +166,3 @@ module Rundeck
 end
 
 Rundeck::Decker.new
-
-#begin
-#  deck = Rundeck::API.new rundeck
-#  options[:deck] = deck.project options['project']
-#  options[:args] = {}
-#  # step: parse the command line options
-#  parser.parse!
-#  # step: we need to validate the job options are correct
-#  run    if options[:command] == :run
-#  export if options[:command] == :export
-#  import if options[:command] == :import
-#  job    if options[:command] == :job
-#rescue Interrupt => e
-#  verbose "exiting tho the job: #{options[:job]} might still be running"
-#rescue ArgumentError => e
-#  parser.usage e.message
-#rescue SystemExit => e
-#  exit e.status
-#rescue Exception => e
-#  parser.usage e.message
-#end

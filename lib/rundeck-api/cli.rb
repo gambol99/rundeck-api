@@ -5,6 +5,7 @@
 #  vim:ts=4:sw=4:et
 #
 require 'yaml'
+require 'optionscrapper'
 
 module Rundeck
   class CLI
@@ -17,12 +18,24 @@ module Rundeck
     end
 
     def settings filename = nil
-      @config ||= load_configuration
+      @config ||= configuration filename
     end
 
-    def load_configuration filename = "#{ENV['HOME']}/.rundeck.yaml"
-      validate_file filename rescue "the configuration file: #{filename} is invalid, please check"
-      YAML.load(File.read(filename))
+    def configuration filename 
+      filename ||= "#{ENV['HOME']}/.rundeck.yaml"
+      validate_file filename
+      validate_configuration YAML.load(File.read(filename))
+    end
+
+    def validate_configuration config = {} 
+      config.each_pair do |name,args|
+        required %(url api_token project), args 
+        raise ArgumentError, "the url: #{args['url']} in rundeck entry: #{name} is invalid" unless valid_url? args['url']
+      end
+      if config['default'] and !config[config['default']]
+        raise ArgumentError, "the default rundeck: #{config['default']} does not exist" 
+      end
+      config
     end
   end
 end

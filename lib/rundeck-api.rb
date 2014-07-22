@@ -9,6 +9,7 @@ require 'base'
 require 'models'
 require 'cli'
 
+
 module Rundeck
   module API
     ROOT = File.expand_path File.dirname __FILE__
