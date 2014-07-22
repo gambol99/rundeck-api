@@ -7,6 +7,7 @@
 $:.unshift File.join(File.dirname(__FILE__),'rundeck-api/' )
 require 'base'
 require 'models'
+require 'cli'
 
 module Rundeck
   module API
@@ -15,9 +16,9 @@ module Rundeck
 
     def self.version
       Rundeck::VERSION
-    end 
+    end
 
-    def self.new options 
+    def self.new options
       base = Rundeck::Base.new
       base.set_configuration options
     end

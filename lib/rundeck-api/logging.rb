@@ -17,6 +17,7 @@ module Rundeck
     def notify(string, options = {})
       print formatted_string(string, options)
     end
+    alias_method :verbose, :notify
 
     def announce(string, options = {})
       print formatted_string(string, { :color => :green, :symbol => "*" }.merge(options))
