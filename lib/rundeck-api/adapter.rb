@@ -23,10 +23,10 @@ module Rundeck
     def request method, options = {}
       result = nil
       url = rundeck options[:uri]
-      begin 
+      begin
         Timeout::timeout( settings[:timeout] || 10 ) do
           http_options = {
-            :verify  => verify_ssl,
+            :verify  => false,
             :headers => default_headers
           }
           case method
@@ -38,26 +38,18 @@ module Rundeck
           result = HTTParty.send( "#{method}", url, http_options )
         end
         raise Exception, "unable to retrive the request: #{url}" unless result
-        unless result.code == 200
-          raise Exception, parse_xml(result.body)["error"].last["message"].first rescue result.body
-        end
+        raise Exception, result.body unless result.code == 200
         ( options[:parse] ) ? parse_xml( result.body ) : result.body
-      rescue Timeout::Error 
-
-      rescue Exception => e 
+      rescue Timeout::Error
 
       end
     end
 
-    def default_headers 
+    def default_headers
       {
         'X-Rundeck-Auth-Token' => settings[:api_token],
         'Accept' => settings[:accepts]
       }
-    end
-
-    def verify_ssl
-      options[:verify_ssl] || false
     end
 
     def parse_xml document

@@ -7,12 +7,13 @@
 #
 
 default: deck0
-deck0:
-  url: https://rundeck.domain.com
-  api_token: token 
-  project: project_name
-deck1:
-  url: https://rundeck.domain.com
-  api_token: token 
-  project: project_name
+rundecks:
+  deck0:
+    rundeck: https://rundeck.hq.noths.com
+    api_token: KTggyDiZvlGRHTnY1U78dMYE9o1WC3m6
+    project: orchestration
+  deck1:
+    rundeck: https://rundeck.deck1.domain.com
+    api_token: token
+    project: project_name
 

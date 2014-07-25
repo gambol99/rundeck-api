@@ -10,7 +10,6 @@ $: << '/home/jest/scm/github/optionscrapper/lib'
 $:.unshift File.join(File.dirname(__FILE__),'.','../lib')
 require 'rubygems' if RUBY_VERSION < '1.9.0'
 require 'rundeck-api'
-require 'colorize'
 
 module Rundeck
   class Decker < CLI
@@ -21,6 +20,9 @@ module Rundeck
         # step: load the configuration
         settings options[:config]
         # step: pull the jobs from the project
+        project
+        # step call the command
+        send options[:command]
       rescue SystemExit => e
         exit e.status
       rescue Exception => e
@@ -30,8 +32,17 @@ module Rundeck
 
     private
     def list
-      return @jobs if !@jobs.empty?
-      # step: we create a parse for EACH job
+      newline
+      puts "  %-32s %s".green % [ "JOB NAME", "DESCRIPTION" ]
+      puts "   > rundeck: %s, project: %s".green % [ rundeck['rundeck'], rundeck['project'] ]
+      newline
+      project.jobs do |job|
+        puts "  %-32s %s (%s)" % [ job.name, job.description || 'no description', job.group.blue ]
+      end
+      newline
+    end
+
+    def nothing
       project.jobs do |job|
         @jobs[job.name] = OptionParser::new do |o|
           o.banner = ''
@@ -70,29 +81,20 @@ module Rundeck
       options[:remove] ||= false
       options[:dupe]   ||= 'update'
       options[:uuid]   ||= 'remove'
-      parser.usage "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
-      parser.usage "the dupe policy must be either skip/create/update" unless options[:dupe] =~ /^(skip|create|update)$/
-      parser.usage "the uuid options must be eithe preserve or remove" unless options[:uuid] =~ /^(preserve|remove)$/
-      parser.usage "the job file: #{options[:filename]} does not exist"    unless File.exist? options[:filename]
-      parser.usage "the job file: #{options[:filename]} is not a file"     unless File.file? options[:filename]
-      verbose "step: attemping to import the job definitions from file: #{options[:filename]}"
+      fail "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
+      fail "the dupe policy must be either skip/create/update" unless options[:dupe] =~ /^(skip|create|update)$/
+      fail "the uuid options must be eithe preserve or remove" unless options[:uuid] =~ /^(preserve|remove)$/
+      fail "the job file: #{options[:filename]} does not exist" unless File.exist? options[:filename]
+      fail "the job file: #{options[:filename]} is not a file" unless File.file? options[:filename]
+      announce "step: attemping to import the job definitions from file: #{options[:filename]}"
       project.import File.read(options[:filename]), options
-      verbose "step: successfully imported the definitions"
-    end
-
-    def job
-      options[:format] ||= 'yaml'
-      parser.usage "you have not specified a job to export the definition"  unless options[:job]
-      parser.usage "the job: #{options[:job]} does not exists" unless project.list.include? options[:job]
-      parser.usage "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
-      job = project.job options[:job]
-      puts job.definition options[:format]
+      announce "step: successfully imported the definitions"
     end
 
     def exec
       job = project.job options[:job]
       # step: extract the options
-      verbose "step: validating the job options for job: #{job.name}"
+      announce "step: validating the job options for job: #{job.name}"
       job.options.each do |option|
         option_name = option['name']
         # check: if the option does not have a default - we need to make sure a value has been given
@@ -106,23 +108,43 @@ module Rundeck
       end
       start_time = Time.now
       # step: call the job the specified arguments
-      verbose "step: executing job: #{options[:job]}, project: #{options[:projects]}"
+      announce "step: executing job: #{options[:job]}, project: #{options[:projects]}"
       execution = job.run options[:args]
-      verbose "step: execution started, id: #{execution.id}, href: #{execution.href}"
-      verbose "step: tailing the execution output"
+      announce "step: execution started, id: #{execution.id}, href: #{execution.href}"
+      announce "step: tailing the execution output"
       execution.tail do |output|
         puts "%s" % [ output.chomp.light_blue ]
       end
-      verbose "step: the job has finished, exit status: " << execution.status
-      verbose "step: retrieve the execution output:"
+      announce "step: the job has finished, exit status: " << execution.status
+      announce "step: retrieve the execution output:"
       time_took = ( Time.now - start_time )
-      verbose "step: time_took: %fms" % [ time_took ]
-      verbose "step: complete"
+      announce "step: time_took: %fms" % [ time_took ]
+      announce "step: complete"
     end
 
-    def export project = options[:deck]
-      verbose "exporting all the jobs from project: #{options[:project]}"
-      puts project.export options[:format] || 'yaml'
+    def export
+      fail "we do not support the xml format at the moment" if options[:format] == 'xml'
+      # step: are we exporting a single job?
+      options[:format] ||= 'yaml'
+      if options[:job]
+        fail "you have not specified a job to export the definition"  unless options[:job]
+        fail "the job: #{options[:job]} does not exists" unless project.list.include? options[:job]
+        fail "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
+        job = project.job options[:job]
+        puts job.definition options[:format]
+      else
+        definitions = project.export options[:format]
+        if options[:single]
+          YAML.load(definitions).each do |job|
+            file_name = job['name'].gsub(/[ ]+/,'_') << "." << options[:format]
+            File.open( file_name, 'w' ) do |x|
+              x.puts job.to_yaml
+            end
+          end
+        else
+          puts definitions
+        end
+      end
     end
 
     def parser
@@ -130,7 +152,7 @@ module Rundeck
       @parser ||= OptionScrapper::new do |o|
         o.banner = "Usage: #{__FILE__} command [options]"
         o.on( '-c CONFIG', '--config CONFIG', 'the path / location of the configuration file ') { |x| options[:config] = x }
-        o.on( '-r RUNDECK', '-rundeck RUNDECK', 'the configuration can contain multiple rundecks, selected via here' ) { |x| options[:rundeck] = x }
+        o.on( '-r RUNDECK', '--rundeck RUNDECK', 'the configuration can contain multiple rundecks' ) { |x| options[:rundeck] = x }
         o.command :projects, 'list all the projects within rundeck' do
           o.on_command { options[:command] = :projects }
         end
@@ -157,6 +179,7 @@ module Rundeck
         o.command :export, 'export the jobs from the project in the specified format' do
           o.on( '-f FORMAT', '--format FORMAT', 'the format of the jobs, either yaml or xml (defaults to yaml)') { |x| options[:format] = x }
           o.on( '-n NAME', '--name NAME', 'the name of the job you wish to export' ) { |x| options[:job] = x }
+          o.on( '-s', '--single', 'export the jobs in single files' ) { options[:single] = true }
           o.on_command { options[:command] = :export }
         end
       end

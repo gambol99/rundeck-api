@@ -14,13 +14,13 @@ module Rundeck
       parse_definitions definition
     end
 
-    def options 
+    def options
       ( @options || {} )
     end
 
     def executions &block
       get( "/api/1/job/#{id}/executions" )['executions'].map do |x|
-        x = Rundeck::Execution.new x 
+        x = Rundeck::Execution.new x
         yield x if block_given?
       end
     end
@@ -31,23 +31,24 @@ module Rundeck
     end
 
     def run arguments = {}
-      Rundeck::Execution.new( 
-        post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } ) 
+      Rundeck::Execution.new(
+        post( "/api/1/job/#{@id}/run", { :argString => generate_job_options( arguments ) } )
       )
     end
 
     private
     def generate_job_options arguments = {}
       job_arguments = ""
-      arguments.each_pair { |k,v| job_arguments << "-#{k.to_s} #{v} " } 
+      arguments.each_pair { |k,v| job_arguments << "-#{k.to_s} #{v} " }
       job_arguments
     end
 
     def parse_definitions definition
-      begin 
+      begin
         @id = definition['id'].first
         @name = definition['name'].first
-        @uuid = definition['uuid'].first 
+        @uuid = definition['uuid'].first
+        @group = definition['group'].first
         @description = ( definition['description'].first.empty? ) ? 'no description' : definition['description'].first
         @project = definition['context'].first['project']
         if definition['context'].first.has_key? 'options'
@@ -55,7 +56,7 @@ module Rundeck
         else
           @options = {}
         end
-      rescue Exception => e 
+      rescue Exception => e
         raise Exception, "unable to parse the job definition: #{e.message}"
       end
     end
