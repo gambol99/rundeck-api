@@ -1,6 +1,7 @@
 *.gem
 .rundeck.yaml
 *.rbc
+jobs/*.yaml.erb
 /.config
 /coverage/
 /InstalledFiles
