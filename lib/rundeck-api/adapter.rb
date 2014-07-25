@@ -42,7 +42,7 @@ module Rundeck
       end
       raise Exception, "unable to retrive the request: #{url}" unless result
       unless result.code == 200
-        raise Exception, parse_xml(result.body)["error"].last["message"].first rescue result.body
+        raise Exception, result.body
       end
       ( options[:parse] ) ? parse_xml( result.body ) : result.body
     end
