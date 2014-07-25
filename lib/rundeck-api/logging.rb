@@ -21,6 +21,7 @@ module Rundeck
     def announce(string, options = {})
       print formatted_string(string, { :color => :green, :symbol => "*" }.merge(options))
     end
+    alias_method :verbose, :announce
 
     def warn(string)
       Kernel.warn formatted_string(string, :symbol => "*", :color => :orangae, :newline => false)
