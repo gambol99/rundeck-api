@@ -5,8 +5,6 @@
 #
 #  vim:ts=2:sw=2:et
 #
-
-$: << '/home/jest/scm/github/optionscrapper/lib'
 $:.unshift File.join(File.dirname(__FILE__),'.','../lib')
 require 'rubygems' if RUBY_VERSION < '1.9.0'
 require 'rundeck-api'
@@ -144,8 +142,10 @@ module Rundeck
       else
         definitions = project.export options[:format]
         if options[:single]
+          directory = validate_directory options[:directory]
+          directory ||= './'
           YAML.load(definitions).each do |job|
-            file_name = job['name'].gsub(/[ ]+/,'_') << "." << options[:format]
+            file_name = "%s%s" % [ directory, job['name'].gsub(/[ ]+/,'_') << "." << options[:format] ]
             File.open( file_name, 'w' ) { |x| x.puts job.to_yaml }
           end
         else
@@ -198,6 +198,7 @@ module Rundeck
         o.command :export, 'export the jobs from the project in the specified format' do
           o.on( '-f FORMAT', '--format FORMAT', 'the format of the jobs, either yaml or xml (defaults to yaml)') { |x| options[:format] = x }
           o.on( '-n NAME', '--name NAME', 'the name of the job you wish to export' ) { |x| options[:job] = x }
+          o.on( '-d DIRECTORY', '--directory DIRECTORY', 'the directory to place the single jobs' ) { |x| options[:directory] = x }
           o.on( '-s', '--single', 'export the jobs in single files' ) { options[:single] = true }
           o.on_command { options[:command] = :export }
         end

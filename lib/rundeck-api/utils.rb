@@ -16,6 +16,13 @@ module Rundeck
       filename
     end
 
+    def validate_directory directory
+      raise "the directory: #{directory} does not exist"  unless File.exist? directory
+      raise "the directory: #{directory} is not a directory" unless File.directory? directory
+      raise "the directory: #{directory} is not writable" unless File.writable? directory
+      directory
+    end
+
     def required args, options
       args.each do |x|
         raise ArgumentError, "you have not specified the #{x} option" unless options.has_key? x
