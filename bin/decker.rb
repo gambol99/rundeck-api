@@ -20,9 +20,9 @@ module Rundeck
         # step: load the configuration
         settings options[:config]
         # step: pull the jobs from the project
-        project
+        generate_job_parsers
         # step call the command
-        send options[:command]
+        send options[:command] if options[:command]
       rescue SystemExit => e
         exit e.status
       rescue Exception => e
@@ -32,40 +32,48 @@ module Rundeck
 
     private
     def list
+      options[:name] ||= '.*'
+      options[:group] ||= '.*'
       newline
       puts "  %-32s %s".green % [ "JOB NAME", "DESCRIPTION" ]
-      puts "   > rundeck: %s, project: %s".green % [ rundeck['rundeck'], rundeck['project'] ]
+      puts "   > rundeck: %s, project: %s".green % [ rundeck['rundeck'], project_name ]
       newline
       project.jobs do |job|
+        next unless job.name =~ /.*#{options[:name]}.*/
+        next unless job.group =~ /.*#{options[:group]}.*/
         puts "  %-32s %s (%s)" % [ job.name, job.description || 'no description', job.group.blue ]
       end
       newline
     end
 
-    def nothing
-      project.jobs do |job|
-        @jobs[job.name] = OptionParser::new do |o|
-          o.banner = ''
-          o.separator "\tjob: #{job.name}     : #{job.description}"
-          o.separator ''
-          job.options.each do |option|
-            option_name      = option['name']
-            description      = ( option['description'] || [] ).first || "no description for this option"
-            if description
-
+    def generate_job_parsers arguments = :args
+      @job_parsers ||= {}
+      if @job_parsers.empty?
+        project.jobs do |job|
+          @job_parsers[job.name] = OptionParser::new do |o|
+            o.banner = ''
+            o.separator "\tjob: #{job.name}     : #{job.description}"
+            o.separator ''
+            job.options.each do |option|
+              option_name = option['name']
+              description = ( option['description'] || [] ).first || "no description for this option"
+              if option['values'] or option['value']
+                description << " ( "
+                description << "defaults: '#{option['value'].blue}' " if option['value']
+                description << "options: '#{option['values'].blue}' " if option['values']
+                description << ")"
+              end
+              o.on( "--#{option_name} #{option_name.upcase}", description ) { |x| options[arguments][option_name.to_sym] = x   }
             end
-            if option['values'] or option['value']
-              description << " ( "
-              description << "defaults: '#{option['value'].blue}' " if option['value']
-              description << "options: '#{option['values'].blue}' " if option['values']
-              description << ")"
-            end
-            o.on( "--#{option_name} #{option_name.upcase}", description ) { |x| options[:args][option_name.to_sym] = x   }
+            o.separator ''
           end
-          o.separator ''
         end
       end
-      @jobs
+      @job_parsers
+    end
+
+    def job_parser name
+      generate_job_parsers[name]
     end
 
     #
@@ -92,44 +100,45 @@ module Rundeck
     end
 
     def exec
+      # step: fail if we do not have a job to execute
+      fail "you have not specified a job to run" unless options[:job]
+      # step: pull the job defined from rundeck
       job = project.job options[:job]
-      # step: extract the options
+      # step: we need to parse the options of the job
+      parse_job_options
+
+      # step: extract the options and validate against what the user has provided
       announce "step: validating the job options for job: #{job.name}"
       job.options.each do |option|
-        option_name = option['name']
+        name = option['name'].to_sym
         # check: if the option does not have a default - we need to make sure a value has been given
         if option['required'] == 'true' and !option['value']
-          raise ArgumentError, "you have not specified the #{option_name} option" if !options[:args][option_name.to_sym]
-        end
-        # check: if the option has a regex, lets validate it
-        if option['regex'] and !options[:args][option_name.to_sym] =~ /#{option['regex']}/
-          raise ArgumentError, "the option: #{option_name} is invalid, does not match regex: #{option['regex']}"
+          raise ArgumentError, "you have not specified the #{name} option" unless options[:args][name]
         end
       end
       start_time = Time.now
       # step: call the job the specified arguments
-      announce "step: executing job: #{options[:job]}, project: #{options[:projects]}"
+      announce "step: executing job: #{options[:job]}, project: #{project_name}"
       execution = job.run options[:args]
       announce "step: execution started, id: #{execution.id}, href: #{execution.href}"
       announce "step: tailing the execution output"
       execution.tail do |output|
-        puts "%s" % [ output.chomp.light_blue ]
+        announce( "%s" % [ output.chomp ], { :color => :light_blue } )
       end
       announce "step: the job has finished, exit status: " << execution.status
       announce "step: retrieve the execution output:"
       time_took = ( Time.now - start_time )
       announce "step: time_took: %fms" % [ time_took ]
-      announce "step: complete"
+      announce "step: execution complete"
     end
 
     def export
       fail "we do not support the xml format at the moment" if options[:format] == 'xml'
-      # step: are we exporting a single job?
       options[:format] ||= 'yaml'
+      # step: are we exporting a single job?
       if options[:job]
         fail "you have not specified a job to export the definition"  unless options[:job]
         fail "the job: #{options[:job]} does not exists" unless project.list.include? options[:job]
-        fail "the format must be either yaml or xml" unless options[:format] =~ /^(yaml|xml)$/
         job = project.job options[:job]
         puts job.definition options[:format]
       else
@@ -137,9 +146,7 @@ module Rundeck
         if options[:single]
           YAML.load(definitions).each do |job|
             file_name = job['name'].gsub(/[ ]+/,'_') << "." << options[:format]
-            File.open( file_name, 'w' ) do |x|
-              x.puts job.to_yaml
-            end
+            File.open( file_name, 'w' ) { |x| x.puts job.to_yaml }
           end
         else
           puts definitions
@@ -147,16 +154,22 @@ module Rundeck
       end
     end
 
+    def parse_job_options
+      job_parser( options[:job] ).parse! options[:job_options]
+    end
+
     def parser
       # step: we create the main options parser
       @parser ||= OptionScrapper::new do |o|
         o.banner = "Usage: #{__FILE__} command [options]"
-        o.on( '-c CONFIG', '--config CONFIG', 'the path / location of the configuration file ') { |x| options[:config] = x }
+        o.on( '-c CONFIG', '--config CONFIG', "the path / location of the configuration file (#{default_configuration})") { |x| options[:config] = x }
         o.on( '-r RUNDECK', '--rundeck RUNDECK', 'the configuration can contain multiple rundecks' ) { |x| options[:rundeck] = x }
         o.command :projects, 'list all the projects within rundeck' do
           o.on_command { options[:command] = :projects }
         end
         o.command :list, 'list all the jobs with the selected project' do
+          o.on( '-n NAME', '--name NAME', 'the name of the job you wish to export, regex' ) { |x| options[:name] = x }
+          o.on( '-g GROUP', '--group GROUP', 'list job only within this group, regex' ) { |x| options[:group] = x }
           o.on_command { options[:command] = :list }
         end
         o.command :exec, 'run / execute a job within the project' do
@@ -165,8 +178,14 @@ module Rundeck
             options[:job_options] = ( ARGV.index('--') ) ? ARGV[ARGV.index('--')+1..-1] : ARGV[ARGV.index(job)+1..-1]
           end
           o.on( '-t', '--tail', 'tail the output of the execution and print to screen' ) { |x| options[:tail] = true  }
-          o.on( '-h', '--help', 'display the options for this job' ) { options[:usage] = true }
-          o.on_command {  options[:command] = :run }
+          o.on( '-h', '--help', 'display the options for this job' ) do
+            settings options[:config]
+            if options[:job]
+              puts job_parser options[:job]
+              exit 0
+            end
+          end
+          o.on_command {  options[:command] = :exec }
         end
         o.command :import, 'import a jobs or jobs into the current project' do
           o.on( '-j JOBS', '--jobs JOBS',      'the location of the file contains the job/jobs' ) { |x| options[:filename] = x }

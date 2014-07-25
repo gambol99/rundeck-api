@@ -43,11 +43,11 @@ module Rundeck
     end
 
     def formatted_string(string, options = {})
-      symbol = options[:symbol] || " "
+      symbol = options[:symbol] || ""
       string = string.to_s
-      string = string.send options[:color] if options[:color]
+      string = string.colorize( options[:color] ) if options[:color]
       string << "\n" unless options[:newline] == false
-      "  #{symbol} #{string}"
+      "#{symbol} #{string}"
     end
   end
 end

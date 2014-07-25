@@ -9,11 +9,10 @@
 default: deck0
 rundecks:
   deck0:
-    rundeck: https://rundeck.hq.noths.com
-    api_token: KTggyDiZvlGRHTnY1U78dMYE9o1WC3m6
-    project: orchestration
+    rundeck: https://rundeck.deck0.domain.com
+    api_token: token
+    project: project
   deck1:
     rundeck: https://rundeck.deck1.domain.com
     api_token: token
     project: project_name
-

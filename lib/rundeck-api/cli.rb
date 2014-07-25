@@ -20,7 +20,8 @@ module Rundeck
 
     def default_options
       {
-        :colors => true
+        :colors => true,
+        :args => {}
       }
     end
 
@@ -34,6 +35,10 @@ module Rundeck
 
     def project
       @project ||= decker.project select_rundeck['project']
+    end
+
+    def project_name
+      rundeck['project']
     end
 
     def rundecks
@@ -53,7 +58,8 @@ module Rundeck
     end
 
     def select_rundeck
-      unless @rundeck
+      @rundeck ||= {}
+      if @rundeck.empty?
         if options[:rundeck]
           raise ArgumentError, "the rundeck: #{options[:rundeck]} does not exist in configuration" unless rundeck? options[:rundeck]
           @rundeck = rundecks[options[:rundeck]]
@@ -68,9 +74,13 @@ module Rundeck
     end
 
     def configuration filename
-      filename ||= "#{ENV['HOME']}/.rundeck.yaml"
+      filename ||= default_configuration
       validate_file filename
       validate_configuration YAML.load(File.read(filename))
+    end
+
+    def default_configuration
+      "#{ENV['HOME']}/.rundeck.yaml"
     end
 
     def fail message
