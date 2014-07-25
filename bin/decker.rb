@@ -164,15 +164,14 @@ module Rundeck
         o.banner = "Usage: #{__FILE__} command [options]"
         o.on( '-c CONFIG', '--config CONFIG', "the path / location of the configuration file (#{default_configuration})") { |x| options[:config] = x }
         o.on( '-r RUNDECK', '--rundeck RUNDECK', 'the configuration can contain multiple rundecks' ) { |x| options[:rundeck] = x }
-        o.command :projects, 'list all the projects within rundeck' do
-          o.on_command { options[:command] = :projects }
-        end
         o.command :list, 'list all the jobs with the selected project' do
+          o.command_alias :ls
           o.on( '-n NAME', '--name NAME', 'the name of the job you wish to export, regex' ) { |x| options[:name] = x }
           o.on( '-g GROUP', '--group GROUP', 'list job only within this group, regex' ) { |x| options[:group] = x }
           o.on_command { options[:command] = :list }
         end
         o.command :exec, 'run / execute a job within the project' do
+          o.command_alias :r
           o.on( '-n NAME', '--name NAME', 'perform an execution of the job' ) do |job|
             options[:job] = job
             options[:job_options] = ( ARGV.index('--') ) ? ARGV[ARGV.index('--')+1..-1] : ARGV[ARGV.index(job)+1..-1]
@@ -187,7 +186,18 @@ module Rundeck
           end
           o.on_command {  options[:command] = :exec }
         end
+        o.command :activity, 'interrogate the rundeck activity and history' do
+          o.command_alias :his
+          o.on( '-n JOB_NAME', '--name JOB_NAME', 'filter the activity by the job name, regex' ) { |x| options[:name] = x }
+          o.on( '-i ID', '--id ID', 'the id of the activity you are interested in' ) { options[:id] = x }
+          o.on( '-g GROUP', '--group GROUP', 'filter the activity by the group name, regex' ) { |x| options[:group] = x }
+          o.on( '-R', '--running', 'only show activity which is current running' ) { options[:running] = true }
+          o.on( '-S', '--stopped', 'only show activity which has stopped' ) { options[:stopped] = true }
+          o.on( '-F', '--failed', 'only show activity which has failed' ) { options[:failed] = true }
+          o.on( '-o', '--output', 'view the output of the activity or tail the running job' ) { options[:output] = true }
+        end
         o.command :import, 'import a jobs or jobs into the current project' do
+          o.command_alias :imp
           o.on( '-j JOBS', '--jobs JOBS',      'the location of the file contains the job/jobs' ) { |x| options[:filename] = x }
           o.on( '-f FORMAT','--format FORMAT', 'the format the jobs file is in (yaml/xml)' ) { |x| options[:format] = x }
           o.on( '-u OPTION', '--uuid OPTIONS', 'preserve or remove options for uuids' ) { |x| options[:uuid] = x }
@@ -196,6 +206,7 @@ module Rundeck
           o.on_command { options[:command] = :import }
         end
         o.command :export, 'export the jobs from the project in the specified format' do
+          o.command_alias :exp
           o.on( '-f FORMAT', '--format FORMAT', 'the format of the jobs, either yaml or xml (defaults to yaml)') { |x| options[:format] = x }
           o.on( '-n NAME', '--name NAME', 'the name of the job you wish to export' ) { |x| options[:job] = x }
           o.on( '-d DIRECTORY', '--directory DIRECTORY', 'the directory to place the single jobs' ) { |x| options[:directory] = x }
