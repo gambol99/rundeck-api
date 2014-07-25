@@ -8,7 +8,7 @@ require 'execution'
 
 module Rundeck
   class Job < Base
-    attr_reader :id, :uuid, :description, :name, :project, :options, :group, :multipleExecutions
+    attr_reader :id, :uuid, :description, :name, :project, :options, :group, :multipleExecutions, :average_time
 
     def initialize definition
       parse_definitions definition
@@ -51,6 +51,7 @@ module Rundeck
         @group = definition['group'].first
         @description = ( definition['description'].first.empty? ) ? 'no description' : definition['description'].first
         @project = definition['context'].first['project']
+        @average_time = definition['average_time'] || 0
         if definition['context'].first.has_key? 'options'
           @options = definition['context'].first['options'].first['option']
         else

@@ -13,11 +13,11 @@ module Rundeck
   class Decker < CLI
     def initialize
       begin
-        # step: generate and parse the command line
+        # generate and parse the command line
         parser.parse!
-        # step: load the configuration
+        # load the configuration
         settings options[:config]
-        # step: pull the jobs from the project
+        # pull the jobs from the project
         generate_job_parsers
         # step call the command
         send options[:command] if options[:command]
@@ -92,21 +92,21 @@ module Rundeck
       fail "the uuid options must be eithe preserve or remove" unless options[:uuid] =~ /^(preserve|remove)$/
       fail "the job file: #{options[:filename]} does not exist" unless File.exist? options[:filename]
       fail "the job file: #{options[:filename]} is not a file" unless File.file? options[:filename]
-      announce "step: attemping to import the job definitions from file: #{options[:filename]}"
+      announce "attemping to import the job definitions from file: #{options[:filename]}"
       project.import File.read(options[:filename]), options
-      announce "step: successfully imported the definitions"
+      announce "successfully imported the definitions"
     end
 
     def exec
-      # step: fail if we do not have a job to execute
+      # fail if we do not have a job to execute
       fail "you have not specified a job to run" unless options[:job]
-      # step: pull the job defined from rundeck
+      # pull the job defined from rundeck
       job = project.job options[:job]
-      # step: we need to parse the options of the job
+      # we need to parse the options of the job
       parse_job_options
 
-      # step: extract the options and validate against what the user has provided
-      announce "step: validating the job options for job: #{job.name}"
+      # extract the options and validate against what the user has provided
+      announce "validating the job options for job: #{job.name}"
       job.options.each do |option|
         name = option['name'].to_sym
         # check: if the option does not have a default - we need to make sure a value has been given
@@ -115,25 +115,25 @@ module Rundeck
         end
       end
       start_time = Time.now
-      # step: call the job the specified arguments
-      announce "step: executing job: #{options[:job]}, project: #{project_name}"
+      # call the job the specified arguments
+      announce "executing job: #{options[:job]}, project: #{project_name}"
+      #announce "average execution time based on history: %f" % [ job.average_time ] if job.a
       execution = job.run options[:args]
-      announce "step: execution started, id: #{execution.id}, href: #{execution.href}"
-      announce "step: tailing the execution output"
+      announce "execution started, id: #{execution.id}, href: #{execution.href}"
+      announce "tailing the execution output"
       execution.tail do |output|
         announce( "%s" % [ output.chomp ], { :color => :light_blue } )
       end
-      announce "step: the job has finished, exit status: " << execution.status
-      announce "step: retrieve the execution output:"
+      announce "the job has finished, exit status: " << execution.status
       time_took = ( Time.now - start_time )
-      announce "step: time_took: %fms" % [ time_took ]
-      announce "step: execution complete"
+      announce "job execution time: %fms" % [ time_took ]
+      announce "execution complete"
     end
 
     def export
       fail "we do not support the xml format at the moment" if options[:format] == 'xml'
       options[:format] ||= 'yaml'
-      # step: are we exporting a single job?
+      # are we exporting a single job?
       if options[:job]
         fail "you have not specified a job to export the definition"  unless options[:job]
         fail "the job: #{options[:job]} does not exists" unless project.list.include? options[:job]
@@ -159,7 +159,7 @@ module Rundeck
     end
 
     def parser
-      # step: we create the main options parser
+      # we create the main options parser
       @parser ||= OptionScrapper::new do |o|
         o.banner = "Usage: #{__FILE__} command [options]"
         o.on( '-c CONFIG', '--config CONFIG', "the path / location of the configuration file (#{default_configuration})") { |x| options[:config] = x }
