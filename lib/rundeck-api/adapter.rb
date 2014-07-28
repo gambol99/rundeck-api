@@ -20,26 +20,29 @@ module Rundeck
       end
     end
 
-    private
     def request method, options = {}
       result = nil
-      url    = rundeck options[:uri]
-      Timeout::timeout( settings[:timeout] || 10 ) do
-        http_options = {
-          :verify  => false,
-          :headers => default_headers
-        }
-        case method
-          when :post
-            http_options[:body] = options[:body]
-          else
-            http_options[:query] = options[:body]
+      url = rundeck options[:uri]
+      begin
+        Timeout::timeout( settings[:timeout] || 10 ) do
+          http_options = {
+            :verify  => false,
+            :headers => default_headers
+          }
+          case method
+            when :post
+              http_options[:body]  = options[:body]
+            else
+              http_options[:query] = options[:body]
+          end
+          result = HTTParty.send( "#{method}", url, http_options )
         end
-        result = HTTParty.send( "#{method}", url, http_options )
+        raise Exception, "unable to retrive the request: #{url}" unless result
+        raise Exception, result.body unless result.code == 200
+        ( options[:parse] ) ? parse_xml( result.body ) : result.body
+      rescue Timeout::Error
+
       end
-      raise Exception, "unable to retrive the request: #{url}" unless result
-      raise Exception, result.body unless result.code == 200
-      ( options[:parse] ) ? parse_xml( result.body ) : result.body
     end
 
     def default_headers

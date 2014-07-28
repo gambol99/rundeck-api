@@ -1,0 +1,18 @@
+#
+#
+#   Author: Rohith
+#   Date: 2014-07-22 22:07:31 +0100 (Tue, 22 Jul 2014)
+#
+#  vim:ts=4:sw=4:et
+#
+
+default: deck0
+rundecks:
+  deck0:
+    rundeck: https://rundeck.deck0.domain.com
+    api_token: token
+    project: project_name
+  deck1:
+    rundeck: https://rundeck.deck1.domain.com
+    api_token: token
+    project: project_name
