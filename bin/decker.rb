@@ -130,6 +130,34 @@ module Rundeck
       announce "execution complete"
     end
 
+    def export
+      fail "we do not support the xml format at the moment" if options[:format] == 'xml'
+      options[:format] ||= 'yaml'
+      # are we exporting a single job?
+      if options[:job]
+        fail "you have not specified a job to export the definition"  unless options[:job]
+        fail "the job: #{options[:job]} does not exists" unless project.list.include? options[:job]
+        job = project.job options[:job]
+        puts job.definition options[:format]
+      else
+        definitions = project.export options[:format]
+        if options[:single]
+          directory = validate_directory options[:directory]
+          directory ||= './'
+          YAML.load(definitions).each do |job|
+            file_name = "%s%s" % [ directory, job['name'].gsub(/[ ]+/,'_') << "." << options[:format] ]
+            File.open( file_name, 'w' ) { |x| x.puts job.to_yaml }
+          end
+        else
+          puts definitions
+        end
+      end
+    end
+
+    def parse_job_options
+      job_parser( options[:job] ).parse! options[:job_options]
+    end
+
     def parser
       # we create the main options parser
       @parser ||= OptionScrapper::new do |o|
