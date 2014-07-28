@@ -145,8 +145,12 @@ module Rundeck
           directory = validate_directory options[:directory]
           directory ||= './'
           YAML.load(definitions).each do |job|
+            container = []
+            container << job
             file_name = "%s%s" % [ directory, job['name'].gsub(/[ ]+/,'_') << "." << options[:format] ]
-            File.open( file_name, 'w' ) { |x| x.puts job.to_yaml }
+            File.open( file_name, 'w' ) do |x|
+              x.puts [ container.to_yaml ]
+            end
           end
         else
           puts definitions

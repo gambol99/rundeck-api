@@ -15,7 +15,7 @@ module Rundeck
     include Rundeck::Logging
 
     class Settings
-      def initialize options 
+      def initialize options
         @@config = options
       end
       def self.[](key)
@@ -32,12 +32,12 @@ module Rundeck
       self
     end
 
-    def projects 
-      Rundeck::Projects.new 
+    def projects
+      Rundeck::Projects.new
     end
 
-    def project name 
-      projects.project name 
+    def project name
+      projects.project name
     end
 
     protected
@@ -46,13 +46,13 @@ module Rundeck
     end
 
     private
-    def set_configuration_defaults options 
+    def set_configuration_defaults options
       [ :verbose, :debug, :colors ].each { |x| options[x] ||= false }
       options[:accepts] ||= 'application/xml'
       options
     end
 
-    def validate_options options 
+    def validate_options options
       required %w(rundeck api_token), options
       raise ArgumentError, "the rundeck: #{options['rundeck']} is an invalid url" unless valid_url? options['rundeck']
       options

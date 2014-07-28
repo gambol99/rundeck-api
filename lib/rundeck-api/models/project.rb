@@ -8,28 +8,28 @@ require 'job'
 require 'utils'
 
 module Rundeck
-  class Project < Base 
+  class Project < Base
     attr_reader :name, :description
 
     def initialize definition
       parse_definition definition
     end
-    
+
     def jobs &block
       get( "/api/1/jobs/export?project=#{@name}" )['job'].map do |x|
-        data = Rundeck::Job.new x          
+        data = Rundeck::Job.new x
         yield data if block_given?
         data
       end
     end
 
-    def job name 
-      raise "the job: #{name} does not exist in this project" unless job? name 
-      x = jobs.select { |x| x.name == name }.first 
+    def job name
+      raise "the job: #{name} does not exist in this project" unless job? name
+      x = jobs.select { |x| x.name == name }.first
     end
 
-    def job? name 
-      list.include? name 
+    def job? name
+      list.include? name
     end
 
     def list
@@ -53,7 +53,7 @@ module Rundeck
       } )
     end
 
-    private 
+    private
     def parse_definition definition
       @name = definition['name'].first
       @description = definition['description'].first
