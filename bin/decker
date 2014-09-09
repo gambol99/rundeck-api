@@ -121,13 +121,17 @@ module Rundeck
       execution = job.run options[:args]
       announce "execution started, id: #{execution.id}, href: #{execution.href}"
       announce "tailing the execution output"
-      execution.tail do |output|
-        announce( "%s" % [ output.chomp ], { :color => :light_blue } )
+      if ! options[:no_tail]
+        execution.tail do |output|
+          announce( "%s" % [ output.chomp ], { :color => :light_blue } )
+        end
+        announce "the job has finished, exit status: " << execution.status
+        time_took = ( Time.now - start_time )
+        announce "job execution time: %fms" % [ time_took ]
+        announce "execution complete"
+      else
+        announce "job successfully submitted"
       end
-      announce "the job has finished, exit status: " << execution.status
-      time_took = ( Time.now - start_time )
-      announce "job execution time: %fms" % [ time_took ]
-      announce "execution complete"
     end
 
     def export
@@ -180,7 +184,7 @@ module Rundeck
             options[:job] = job
             options[:job_options] = ( ARGV.index('--') ) ? ARGV[ARGV.index('--')+1..-1] : ARGV[ARGV.index(job)+1..-1]
           end
-          o.on( '-t', '--tail', 'tail the output of the execution and print to screen' ) { |x| options[:tail] = true  }
+          o.on( '-T', '--no-tail', 'do not tail the output of the execution' ) { |x| options[:no_tail] = true }
           o.on( '-h', '--help', 'display the options for this job' ) do
             settings options[:config]
             if options[:job]
