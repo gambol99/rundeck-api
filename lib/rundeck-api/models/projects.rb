@@ -8,8 +8,8 @@ require 'project'
 
 module Rundeck
   class Projects < Base
-    def projects 
-      get( '/api/1/projects' )['projects'].first['project'].map do |data|
+    def projects
+      (get( '/api/1/projects' )['projects'].first['project'] || [] ).map do |data|
         Rundeck::Project.new data
       end
     end

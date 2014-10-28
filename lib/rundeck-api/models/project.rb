@@ -16,7 +16,7 @@ module Rundeck
     end
 
     def jobs &block
-      get( "/api/1/jobs/export?project=#{@name}" )['job'].map do |x|
+      (get( "/api/1/jobs/export?project=#{@name}" )['job'] || []).map do |x|
         data = Rundeck::Job.new x
         yield data if block_given?
         data
